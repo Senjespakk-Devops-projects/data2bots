@@ -5,7 +5,6 @@ import Description from './components/Description';
 // css
 import './css/style.css'
 
-
 const App = () => {
 	return (
 		<div className="container">
