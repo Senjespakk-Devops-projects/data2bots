@@ -44,7 +44,7 @@ const Title = () => {
   }, [])
   return (
     <div className="title">
-      <span className="caption">{hello[0]?.title}  <strong>{world?.title} </strong>
+      <span className="caption">{hello[0]?.title} Hello  <strong>{world?.title} Wolrd </strong>
       </span>
     </div>
   );
