@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: react-app
-          image: registry.digitalocean.com/data2bots/react-app
+          image: registry.digitalocean.com/data2bots
           imagePullPolicy: IfNotPresent          
           ports:
             - containerPort: 3000
