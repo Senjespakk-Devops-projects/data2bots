@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: django-app
-          image: senjespakk/django-app
+          image: registry.digitalocean.com/data2bots/django-app
           imagePullPolicy: IfNotPresent          
           ports:
             - containerPort: 8000

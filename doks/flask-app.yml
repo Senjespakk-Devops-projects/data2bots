@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: flask-app
-          image: senjespakk/flask-app
+          image: registry.digitalocean.com/data2bots/flask-app
           imagePullPolicy: IfNotPresent          
           ports:
             - containerPort: 5000
