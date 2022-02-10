@@ -5,3 +5,4 @@ RUN yarn install
 RUN yarn upgrade
 RUN yarn run build
 CMD [ "yarn", "start"]
+
