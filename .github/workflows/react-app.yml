@@ -6,15 +6,15 @@ name: Build, push, and deploy
 
 on:
   push:
-    branches: [ micro-python ]
+    branches: [ main ]
     paths: 
-      - FlaskApp/**
-      - doks/flask-app.yml
+      - frontend/**
+      - doks/react-app.yml
   pull_request:
-    branches: [ micro-python ]
+    branches: [ main ]
     paths: 
-      - FlaskApp/**
-      - doks/flasl-app.yml
+      - frontend/**
+      - doks/react-app.yml
 
 jobs:
   build:
