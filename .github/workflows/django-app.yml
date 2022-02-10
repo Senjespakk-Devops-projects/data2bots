@@ -1,76 +1,50 @@
-name: Django Image CI
+# This workfow shows how to build a Docker image, tag and push it to DigitalOcean Container Registry, and
+# deploy the application on a DIgitalOcean Kubernetes cluster. For description to the entire worklow, 
+# see www.digitalocean.com/docs/kubernetes/how-to/deploy-using-github-actions.
+
+name: Django app
 
 on:
   push:
-    branches: [ micro-python ]
+    branches: [ main ]
     paths: 
       - DjangoApp/**
-      - aks/django-app.yml
+      - doks/django-app.yml
   pull_request:
-    branches: [ micro-python ]
+    branches: [ main ]
     paths: 
       - DjangoApp/**
-      - aks/django-app.yml
-
-
-env:
-  REGISTRY_NAME: senjespakk/django-app
-  CLUSTER_NAME: micro-python
-  CLUSTER_RESOURCE_GROUP: micro-python
-  NAMESPACE: micro-python
-
+      - doks/django-app.yml
 
 jobs:
-  push_to_registry:
-    name: Push Docker image to Docker Hub
+  build:
     runs-on: ubuntu-latest
-    environment: dockerize
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-      
-      - name: Log in to Docker Hub
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-        with:
-          images: senjespakk/django-app
-          tag-custom: latest
-          tag-semver: |
-            {{raw}}
-      
-      - name: Build and push Docker image
-        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
-        with:
-          context: DjangoApp/
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}${{ github.run_number }}
-          labels: ${{ steps.meta.outputs.labels }}
+    - name: Checkout master
+      uses: actions/checkout@main
 
+    # Install doctl.
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+    
+    # Build a Docker image of your application in your registry and tag the image with the $GITHUB_SHA.
+    - name: Build container image
+      run: docker build -t ${{ secrets.REGISTRY_NAME }}/django-app:$(echo $GITHUB_SHA | head -c7) ./DjangoApp
 
-      - name: Set the target Azure Kubernetes Service (AKS) cluster
-        uses: azure/aks-set-context@v1
-        with:
-          creds: '${{ secrets.AZURE_CREDENTIALS }}'
-          cluster-name: ${{ env.CLUSTER_NAME }}
-          resource-group: ${{ env.CLUSTER_RESOURCE_GROUP }}
+    - name: Log in to DigitalOcean Container Registry with short-lived credentials
+      run: doctl registry login --expiry-seconds 1200
 
+    - name: Push image to DigitalOcean Container Registry
+      run: docker push ${{ secrets.REGISTRY_NAME }}/django-app:$(echo $GITHUB_SHA | head -c7)
 
-      - name: Create namespace if doesn't exist
-        run: |
-          kubectl create namespace ${{ env.NAMESPACE }} --dry-run -o json | kubectl apply -f -
+    # Deploy to DigitalOCcean Kubernetes.
+    - name: Update deployment file
+      run: TAG=$(echo $GITHUB_SHA | head -c7) && sed -i 's|<IMAGE>|${{ secrets.REGISTRY_NAME }}/django-app:'${TAG}'|' $GITHUB_WORKSPACE/doks/django-app.yml
 
-
-      - name: Deploy app to AKS
-        uses: azure/k8s-deploy@v1
-        with:
-          manifests: |
-            aks/django-app.yml
-          images: |
-            ${{ steps.meta.outputs.tags }}${{ github.run_number }}
-          namespace: ${{ env.NAMESPACE }}
+    - name: Save DigitalOcean kubeconfig with short-lived credentials
+      run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ secrets.CLUSTER_NAME }}
+    
+    - name: Deploy to DigitalOcean Kubernetes
+      run: kubectl apply -f $GITHUB_WORKSPACE/doks/django-app.yml
