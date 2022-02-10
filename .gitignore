@@ -1,0 +1,7 @@
+**/terraform/.terraform
+**/DjangoApp/.dbdata
+**/DjangoApp/myenv
+**/frontend/node_modules
+**/FlaskApp/.dbdata
+**/FlaskApp/myenv
+**/aks/db/db-django-secret.yml

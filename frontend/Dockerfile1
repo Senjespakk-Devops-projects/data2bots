@@ -1,0 +1,8 @@
+FROM node:14-alpine AS development
+WORKDIR /react
+COPY ./frontend .
+RUN yarn install
+RUN yarn upgrade
+RUN yarn run build
+RUN chmod -R 775 /react
+CMD [ "yarn", "start"]

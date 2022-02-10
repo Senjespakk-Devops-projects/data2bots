@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-app-deployment
+  labels:
+    app: django-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: django-app
+  template:
+    metadata:
+      labels:
+        app: django-app
+    spec:
+      containers:
+        - name: django-app
+          image: senjespakk/django-app
+          imagePullPolicy: IfNotPresent          
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "100Mi"
+              cpu: "0.1"
+            limits:
+              memory: "200Mi"
+              cpu: "0.3" 
+          env:
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-django-secret
+                  key: user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-django-secret
+                  key: pass
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-django-secret
+                  key: database                               
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-app-service
+spec:  
+  type: ClusterIP
+  selector:
+    app: django-app
+  ports:
+    - protocol: TCP
+      port: 8000

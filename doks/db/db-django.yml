@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv
+  namespace: micro-python
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/django/.dbdata"
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+  namespace: micro-python
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-django-deployment
+  namespace: micro-python
+  labels:
+    app: db-django
+    tier: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-django
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: db-django
+        tier: mysql
+    spec:
+      containers:
+        - name: db-django
+          image: mysql:5.7.22
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-django-secret
+                  key: root_pass  
+
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/minesql
+
+      volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: mysql-pv-claim          
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-django-service
+  namespace: micro-python
+spec:
+  selector:
+    app: db-django
+    tier: mysql
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+  clusterIP: None
