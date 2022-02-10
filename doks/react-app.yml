@@ -39,3 +39,4 @@ spec:
     app: react-app
   ports:
     - port: 3000
+      targetport: 3000
